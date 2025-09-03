@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Perfil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: #2563eb;
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+    </style>
+</head>
+<body class="p-4 bg-gray-100 flex items-center justify-center min-h-screen">
+    <div id="profile-page" class="bg-white shadow-xl rounded-2xl p-6 w-full max-w-2xl mx-auto my-8">
+        <div class="flex items-center gap-4 mb-6">
+            <a href="index.html" class="text-gray-500 hover:text-gray-800 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" /></svg>
+            </a>
+            <h1 class="text-3xl font-bold text-gray-800">Editar Perfil</h1>
+        </div>
+        
+        <div class="p-6 bg-gray-50 rounded-xl max-w-md mx-auto space-y-6">
+            <div>
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Logo do Restaurante</h2>
+                <label for="restaurantLogoInput" class="block text-sm font-medium text-gray-700 mb-1">
+                    Carregar Logo (PNG, JPG, GIF)
+                </label>
+                <input type="file" id="restaurantLogoInput" accept="image/*" class="w-full text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 cursor-pointer">
+                <div id="logoPreviewContainer" class="mt-4 hidden">
+                    <p class="text-sm font-medium text-gray-700 mb-2">Pré-visualização da Logo:</p>
+                    <img id="logoPreview" src="#" alt="Pré-visualização da Logo" class="w-32 h-32 object-contain rounded-lg border border-gray-300 p-2">
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Informações do Restaurante</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="restaurantNameInput" class="text-sm font-medium text-gray-700">Nome do Restaurante</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="showNameToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <input type="text" id="restaurantNameInput" placeholder="Nome do Restaurante" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="restaurantDescriptionInput" class="text-sm font-medium text-gray-700">Descrição</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="showDescriptionToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <textarea id="restaurantDescriptionInput" placeholder="Uma breve descrição sobre o seu restaurante" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="restaurantPhoneInput" class="text-sm font-medium text-gray-700">Telefone</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="showPhoneToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <input type="tel" id="restaurantPhoneInput" placeholder="(99) 99999-9999" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="restaurantAddressInput" class="text-sm font-medium text-gray-700">Endereço</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="showAddressToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <input type="text" id="restaurantAddressInput" placeholder="Rua, Número, Bairro, Cidade" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="restaurantEmailInput" class="text-sm font-medium text-gray-700">Email</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="showEmailToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <input type="email" id="restaurantEmailInput" placeholder="contato@restaurante.com" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="restaurantHoursInput" class="text-sm font-medium text-gray-700">Horário de Funcionamento</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="showHoursToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <input type="text" id="restaurantHoursInput" placeholder="Segunda a Sábado, das 18:00 às 23:00" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"></input>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="saveProfileBtn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors">
+                Salvar Perfil
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // ======================= ESTADO GLOBAL E VARIÁVEIS =======================
+        let restaurantProfile = {
+            logo: null,
+            name: '',
+            description: '',
+            phone: '',
+            address: '',
+            email: '',
+            hours: '',
+            show: {
+                name: true,
+                description: true,
+                phone: true,
+                address: true,
+                email: true,
+                hours: true
+            }
+        };
+
+        // ======================= REFERÊNCIAS AOS ELEMENTOS DO DOM =======================
+        const restaurantLogoInput = document.getElementById('restaurantLogoInput');
+        const logoPreviewContainer = document.getElementById('logoPreviewContainer');
+        const logoPreview = document.getElementById('logoPreview');
+        const saveProfileBtn = document.getElementById('saveProfileBtn');
+        const restaurantNameInput = document.getElementById('restaurantNameInput');
+        const restaurantDescriptionInput = document.getElementById('restaurantDescriptionInput');
+        const restaurantPhoneInput = document.getElementById('restaurantPhoneInput');
+        const restaurantAddressInput = document.getElementById('restaurantAddressInput');
+        const restaurantEmailInput = document.getElementById('restaurantEmailInput');
+        const restaurantHoursInput = document.getElementById('restaurantHoursInput');
+        const showNameToggle = document.getElementById('showNameToggle');
+        const showDescriptionToggle = document.getElementById('showDescriptionToggle');
+        const showPhoneToggle = document.getElementById('showPhoneToggle');
+        const showAddressToggle = document.getElementById('showAddressToggle');
+        const showEmailToggle = document.getElementById('showEmailToggle');
+        const showHoursToggle = document.getElementById('showHoursToggle');
+
+        // ======================= FUNÇÕES AUXILIARES =======================
+        function saveToLocalStorage(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+
+        // ======================= FUNÇÕES DA PÁGINA DE PERFIL =======================
+        function renderProfilePage() {
+            const savedProfile = localStorage.getItem('restaurantProfile');
+            if (savedProfile) {
+                restaurantProfile = JSON.parse(savedProfile);
+            }
+
+            if (restaurantProfile.logo) {
+                logoPreview.src = restaurantProfile.logo;
+                logoPreviewContainer.classList.remove('hidden');
+            } else {
+                logoPreview.src = '#';
+                logoPreviewContainer.classList.add('hidden');
+            }
+            restaurantNameInput.value = restaurantProfile.name;
+            restaurantDescriptionInput.value = restaurantProfile.description;
+            restaurantPhoneInput.value = restaurantProfile.phone;
+            restaurantAddressInput.value = restaurantProfile.address;
+            restaurantEmailInput.value = restaurantProfile.email;
+            restaurantHoursInput.value = restaurantProfile.hours;
+            showNameToggle.checked = restaurantProfile.show.name;
+            showDescriptionToggle.checked = restaurantProfile.show.description;
+            showPhoneToggle.checked = restaurantProfile.show.phone;
+            showAddressToggle.checked = restaurantProfile.show.address;
+            showEmailToggle.checked = restaurantProfile.show.email;
+            showHoursToggle.checked = restaurantProfile.show.hours;
+        }
+
+        function saveRestaurantProfile() {
+            restaurantProfile.name = restaurantNameInput.value.trim();
+            restaurantProfile.description = restaurantDescriptionInput.value.trim();
+            restaurantProfile.phone = restaurantPhoneInput.value.trim();
+            restaurantProfile.address = restaurantAddressInput.value.trim();
+            restaurantProfile.email = restaurantEmailInput.value.trim();
+            restaurantProfile.hours = restaurantHoursInput.value.trim();
+            restaurantProfile.show.name = showNameToggle.checked;
+            restaurantProfile.show.description = showDescriptionToggle.checked;
+            restaurantProfile.show.phone = showPhoneToggle.checked;
+            restaurantProfile.show.address = showAddressToggle.checked;
+            restaurantProfile.show.email = showEmailToggle.checked;
+            restaurantProfile.show.hours = showHoursToggle.checked;
+            if (logoPreview.src && logoPreview.src !== '#') {
+                restaurantProfile.logo = logoPreview.src;
+            } else {
+                restaurantProfile.logo = null;
+            }
+            saveToLocalStorage('restaurantProfile', restaurantProfile);
+            alert('Perfil salvo com sucesso!');
+        }
+
+        // ======================= LISTENERS DE EVENTOS =======================
+        window.addEventListener('DOMContentLoaded', renderProfilePage);
+
+        restaurantLogoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    logoPreview.src = e.target.result;
+                    logoPreviewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        saveProfileBtn.addEventListener('click', saveRestaurantProfile);
+    </script>
+</body>
+</html>

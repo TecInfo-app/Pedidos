@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Pedidos - Gerenciador de Delivery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+        .modal-enter {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        /* Estilos de impressão para o novo arquivo */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-area, .print-area * {
+                visibility: visible;
+            }
+            .print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                font-family: 'Inter', sans-serif;
+            }
+            .print-area h1, .print-area h2, .print-area h3, .print-area h4 {
+                color: #000;
+            }
+        }
+        /* Estilos para a notificação de novo pedido */
+        .notification-box {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ef4444; /* Vermelho */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .notification-box.show {
+            opacity: 1;
+        }
+
+        /* Estilo para destacar o novo pedido (Laranja Claro) */
+        .new-order-highlight {
+            background-color: #fff3e0 !important;
+        }
+
+        /* Estilo para pedidos despachados (Azul Claro) */
+        .dispatched-order-highlight {
+            background-color: #e0f2fe !important;
+        }
+    </style>
+</head>
+<body class="p-4 bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div id="app-container" class="bg-white shadow-xl rounded-2xl p-6 w-full max-w-5xl mx-auto my-8">
+
+        <div id="my-orders-page">
+            <div class="flex items-center gap-4 mb-6">
+                <a href="index.html" class="text-gray-500 hover:text-gray-800 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" /></svg>
+                </a>
+                <h1 class="text-3xl font-bold text-gray-800">Meus Pedidos</h1>
+            </div>
+            
+            <div id="my-orders-list" class="space-y-4">
+                <p class="text-center text-gray-500">Nenhum pedido realizado ainda.</p>
+            </div>
+        </div>
+
+        <div id="messageBox" class="fixed bottom-4 right-4 p-4 text-white rounded-lg shadow-lg z-50 hidden transition-all duration-300"></div>
+    </div>
+    
+    <div id="confirmationModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm modal-enter">
+            <h3 id="confirmationModalTitle" class="text-xl font-bold text-gray-800 mb-4">Confirmação</h3>
+            <p id="confirmationModalMessage" class="text-gray-600 mb-6"></p>
+            <div class="flex justify-end gap-2">
+                <button id="cancelConfirmationBtn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg shadow-md hover:bg-gray-400">Cancelar</button>
+                <button id="confirmActionBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-red-700">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="newOrderNotification" class="notification-box hidden">Novo pedido chegou!</div>
+    
+    <script>
+        // ======================= ESTADO GLOBAL E VARIÁVEIS =======================
+        let myOrders = [];
+        let finalizedOrders = []; // Novo array para o histórico de pedidos finalizados
+        let restaurantProfile = {};
+        let confirmationCallback = null;
+        
+        // Configuração para finalização automática (2 horas em milissegundos)
+        const AUTO_FINALIZE_TIME_MS = 2 * 60 * 60 * 1000;
+        const AUTO_FINALIZE_INTERVAL_MS = 5 * 60 * 1000; // Verificar a cada 5 minutos
+
+        // ======================= REFERÊNCIAS AOS ELEMENTOS DO DOM =======================
+        const myOrdersList = document.getElementById('my-orders-list');
+        const messageBox = document.getElementById('messageBox');
+        const confirmationModal = document.getElementById('confirmationModal');
+        const confirmationModalTitle = document.getElementById('confirmationModalTitle');
+        const confirmationModalMessage = document.getElementById('confirmationModalMessage');
+        const cancelConfirmationBtn = document.getElementById('cancelConfirmationBtn');
+        const confirmActionBtn = document.getElementById('confirmActionBtn');
+        const newOrderNotification = document.getElementById('newOrderNotification');
+        
+        // ======================= FUNÇÕES AUXILIARES =======================
+        function showMessage(message, type = 'success') {
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'bg-yellow-500');
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-500');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-500');
+            } else {
+                messageBox.classList.add('bg-yellow-500');
+            }
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000);
+        }
+        
+        function toggleModal(modal, show) {
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+        
+        function showConfirmationModal(title, message, callback) {
+            confirmationModalTitle.textContent = title;
+            confirmationModalMessage.textContent = message;
+            confirmationCallback = callback;
+            toggleModal(confirmationModal, true);
+        }
+        
+        // ======================= FUNÇÃO DE NOTIFICAÇÃO E SOM =======================
+        function showNewOrderNotification() {
+            newOrderNotification.classList.remove('hidden');
+            setTimeout(() => {
+                newOrderNotification.classList.add('show');
+            }, 10);
+        
+            const notificationSound = new Audio('som.mp3');
+            notificationSound.play();
+        
+            setTimeout(() => {
+                newOrderNotification.classList.remove('show');
+                setTimeout(() => {
+                    newOrderNotification.classList.add('hidden');
+                }, 500);
+            }, 5000); // A notificação desaparece após 5 segundos
+        }
+
+        function highlightNewOrder(orderId) {
+            const orderElement = myOrdersList.querySelector(`[data-order-id="${orderId}"]`);
+            if (orderElement) {
+                orderElement.classList.add('new-order-highlight');
+            }
+        }
+
+        // ======================= PERSISTÊNCIA DE DADOS COM LOCALSTORAGE =======================
+        function saveMyOrders() {
+            localStorage.setItem('myOrders', JSON.stringify(myOrders));
+        }
+
+        function saveFinalizedOrders() {
+            localStorage.setItem('finalizedOrders', JSON.stringify(finalizedOrders));
+        }
+
+        function loadAllData() {
+            myOrders = JSON.parse(localStorage.getItem('myOrders')) || [];
+            finalizedOrders = JSON.parse(localStorage.getItem('finalizedOrders')) || [];
+            restaurantProfile = JSON.parse(localStorage.getItem('restaurantProfile')) || {};
+            renderMyOrdersPage();
+        }
+
+        // ======================= FUNÇÕES DA PÁGINA DE PEDIDOS =======================
+        function renderMyOrdersPage() {
+            myOrdersList.innerHTML = '';
+            if (myOrders.length === 0) {
+                myOrdersList.innerHTML = '<p class="text-center text-gray-500">Nenhum pedido realizado ainda.</p>';
+                return;
+            }
+
+            myOrders.forEach(order => {
+                const orderDiv = document.createElement('div');
+                let orderClass = 'bg-white p-6 rounded-xl shadow-md border border-gray-200 cursor-pointer';
+
+                // Adiciona a classe de destaque de acordo com o status
+                if (order.status === 'Novo') {
+                    orderClass += ' new-order-highlight';
+                } else if (order.status === 'Despachado') {
+                    orderClass += ' dispatched-order-highlight';
+                }
+                orderDiv.className = orderClass;
+                orderDiv.dataset.orderId = order.id;
+
+                let itemsHtml = '';
+                order.items.forEach(item => {
+                    let complementsHtml = '';
+                    if (item.complements && Object.keys(item.complements).length > 0) {
+                        for (const groupName in item.complements) {
+                            complementsHtml += `<p class="font-bold text-xs text-gray-600 mt-2">${groupName}:</p>`;
+                            complementsHtml += `<ul class="pl-4 mt-1 text-xs text-gray-500 space-y-0.5">`;
+                            complementsHtml += item.complements[groupName].map(comp => `
+                                <li>- ${comp.name} ${comp.price > 0 ? `(+R$ ${comp.price.toFixed(2).replace('.', ',')})` : ''}</li>
+                            `).join('');
+                            complementsHtml += `</ul>`;
+                        }
+                    }
+
+                    itemsHtml += `
+                        <li class="text-sm text-gray-600">
+                            <div class="flex justify-between items-center">
+                                <span>${item.quantity}x ${item.product.name}</span>
+                                <span class="font-bold">R$ ${item.totalPrice.toFixed(2).replace('.', ',')}</span>
+                            </div>
+                            ${complementsHtml}
+                        </li>
+                    `;
+                });
+
+                orderDiv.innerHTML = `
+                    <div class="flex justify-between items-center order-header">
+                        <h4 class="text-xl font-bold text-gray-800">Pedido #${order.id.slice(-6)}</h4>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500 hidden md:block">${order.date}</span>
+                            <span class="text-xl font-bold text-green-600">R$ ${order.total.toFixed(2).replace('.', ',')}</span>
+                            <button class="dispatch-order-btn bg-blue-500 text-white font-bold py-1 px-3 rounded-full text-sm hover:bg-blue-600 transition-colors">${order.status === 'Despachado' ? 'Despachado' : 'Despachar'}</button>
+                            <button class="finish-order-btn bg-green-500 text-white font-bold py-1 px-3 rounded-full text-sm hover:bg-green-600 transition-colors">Finalizar Pedido</button>
+                            <button class="print-order-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-full text-sm transition-colors">Imprimir</button>
+                            <button data-id="${order.id}" class="remove-order-btn bg-red-500 text-white font-bold py-1 px-3 rounded-full text-sm hover:bg-red-600 transition-colors">Excluir</button>
+                        </div>
+                    </div>
+                    <div class="order-details mt-4 pt-4 border-t hidden">
+                        <div class="mb-4">
+                            <h5 class="font-bold text-gray-700">Dados do Cliente:</h5>
+                            <p class="text-sm text-gray-600"><strong>Nome:</strong> ${order.customer.name}</p>
+                            <p class="text-sm text-gray-600"><strong>Telefone:</strong> ${order.customer.phone}</p>
+                            <p class="text-sm text-gray-600"><strong>Endereço:</strong> ${order.customer.address}, ${order.customer.number}</p>
+                            ${order.customer.complement ? `<p class="text-sm text-gray-600"><strong>Complemento:</strong> ${order.customer.complement}</p>` : ''}
+                            ${order.customer.reference ? `<p class="text-sm text-gray-600"><strong>Ponto de Ref.:</strong> ${order.customer.reference}</p>` : ''}
+                            ${order.customer.email ? `<p class="text-sm text-gray-600"><strong>Email:</strong> ${order.customer.email}</p>` : ''}
+                        </div>
+                        <div class="mb-4">
+                            <h5 class="font-bold text-gray-700">Itens do Pedido:</h5>
+                            <ul class="space-y-2 pl-4">
+                                ${itemsHtml}
+                            </ul>
+                        </div>
+                        <div class="flex justify-between items-center border-t pt-4">
+                            <div class="space-y-1">
+                                <span class="text-lg font-bold text-gray-800">Total do Pedido:</span>
+                                <span class="block text-sm font-medium text-gray-600">Pagamento: <span class="font-bold text-green-700">${order.paymentMethod}</span></span>
+                            </div>
+                            <span class="text-xl font-bold text-green-600">R$ ${order.total.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                    </div>
+                `;
+                myOrdersList.appendChild(orderDiv);
+            });
+        }
+        
+        function removeOrder(orderId) {
+            let orderRemoved = false;
+
+            // Tenta remover da lista de pedidos ativos
+            const initialMyOrdersLength = myOrders.length;
+            myOrders = myOrders.filter(order => order.id !== orderId);
+            if (myOrders.length < initialMyOrdersLength) {
+                saveMyOrders();
+                orderRemoved = true;
+            }
+
+            // Tenta remover do histórico de pedidos finalizados
+            const initialFinalizedOrdersLength = finalizedOrders.length;
+            finalizedOrders = finalizedOrders.filter(order => order.id !== orderId);
+            if (finalizedOrders.length < initialFinalizedOrdersLength) {
+                saveFinalizedOrders();
+                orderRemoved = true;
+            }
+
+            if (orderRemoved) {
+                renderMyOrdersPage();
+                showMessage('Pedido excluído permanentemente!', 'success');
+            } else {
+                showMessage('Pedido não encontrado para exclusão.', 'error');
+            }
+        }
+
+        function dispatchOrder(orderId) {
+            const orderIndex = myOrders.findIndex(order => order.id === orderId);
+            if (orderIndex !== -1) {
+                myOrders[orderIndex].status = 'Despachado';
+                saveMyOrders();
+                renderMyOrdersPage();
+                showMessage('Pedido despachado!', 'success');
+            }
+        }
+        
+        function finishOrder(orderId) {
+            const orderIndex = myOrders.findIndex(order => order.id === orderId);
+            if (orderIndex !== -1) {
+                const finishedOrder = myOrders.splice(orderIndex, 1)[0]; // Remove da lista ativa
+                finishedOrder.status = 'Finalizado'; // Atualiza o status
+                finalizedOrders.push(finishedOrder); // Adiciona ao histórico
+
+                saveMyOrders(); // Salva a lista ativa
+                saveFinalizedOrders(); // Salva o histórico
+
+                renderMyOrdersPage();
+                showMessage('Pedido finalizado e movido para o histórico!', 'success');
+            }
+        }
+        
+        // Nova função para finalizar pedidos automaticamente
+        function autoFinalizeOldOrders() {
+            const now = Date.now();
+            let changesMade = false;
+            
+            // Filtra os pedidos que precisam ser finalizados
+            const ordersToFinalize = myOrders.filter(order => order.createdAt && (now - order.createdAt) > AUTO_FINALIZE_TIME_MS);
+            
+            if (ordersToFinalize.length > 0) {
+                ordersToFinalize.forEach(order => {
+                    const orderIndex = myOrders.findIndex(o => o.id === order.id);
+                    if (orderIndex !== -1) {
+                        const finishedOrder = myOrders.splice(orderIndex, 1)[0];
+                        finishedOrder.status = 'Finalizado (Auto)';
+                        finalizedOrders.push(finishedOrder);
+                        changesMade = true;
+                    }
+                });
+
+                if (changesMade) {
+                    saveMyOrders();
+                    saveFinalizedOrders();
+                    renderMyOrdersPage();
+                    showMessage('Alguns pedidos foram finalizados automaticamente.', 'info');
+                }
+            }
+        }
+
+        // ======================= FUNÇÃO E LISTENER PARA IMPRESSÃO AUTOMÁTICA =======================
+        function printOrder(orderId) {
+            const order = myOrders.find(o => o.id === orderId);
+            if (!order) {
+                showMessage('Pedido não encontrado para impressão.', 'error');
+                return;
+            }
+        
+            const printWindow = window.open('', '_blank');
+            const printDocument = printWindow.document;
+
+            let orderItemsHtml = '';
+            order.items.forEach(item => {
+                let complementsHtml = '';
+                if (item.complements && Object.keys(item.complements).length > 0) {
+                    for (const groupName in item.complements) {
+                        const optionsHtml = item.complements[groupName].map(comp => `
+                            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                                <span>- ${comp.name}</span>
+                                ${comp.price > 0 ? `<span>(+R$ ${comp.price.toFixed(2).replace('.', ',')})</span>` : ''}
+                            </div>
+                        `).join('');
+
+                        complementsHtml += `
+                            <div style="margin-top: 5px; padding-left: 10px;">
+                                <div style="font-weight: bold; font-size: 12px; color: #555;">${groupName}:</div>
+                                ${optionsHtml}
+                            </div>
+                        `;
+                    }
+                }
+        
+                orderItemsHtml += `
+                    <div style="font-size: 14px; margin-bottom: 10px; border-bottom: 1px dashed #ccc; padding-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="font-weight: bold;">${item.quantity}x ${item.product.name}</span>
+                            <span style="font-weight: bold;">R$ ${item.totalPrice.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        ${complementsHtml}
+                    </div>
+                `;
+            });
+        
+            const printContent = `
+                <div class="print-area" style="padding: 20px; max-width: 400px; margin: 0 auto; line-height: 1.5; font-family: sans-serif;">
+                    <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
+                        ${restaurantProfile.logo ? `<img src="${restaurantProfile.logo}" style="height: 60px; margin: 0 auto 10px;"/>` : ''}
+                        ${restaurantProfile.show?.name && restaurantProfile.name ? `<h1 style="font-size: 24px; font-weight: bold; margin: 0;">${restaurantProfile.name}</h1>` : ''}
+                        ${restaurantProfile.show?.description && restaurantProfile.description ? `<p style="font-size: 14px; color: #555;">${restaurantProfile.description}</p>` : ''}
+                        ${restaurantProfile.show?.phone && restaurantProfile.phone ? `<p style="font-size: 14px; color: #555; margin: 5px 0 0;">Tel: ${restaurantProfile.phone}</p>` : ''}
+                    </div>
+                    
+                    <h2 style="font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 20px;">Detalhes do Pedido #${order.id.slice(-6)}</h2>
+                    
+                    <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        <h3 style="font-size: 16px; font-weight: bold; margin-top: 0; margin-bottom: 10px;">Informações do Cliente:</h3>
+                        <p style="font-size: 14px; margin: 0;"><strong>Nome:</strong> ${order.customer.name}</p>
+                        <p style="font-size: 14px; margin: 0;"><strong>Telefone:</strong> ${order.customer.phone}</p>
+                        <p style="font-size: 14px; margin: 0;"><strong>Endereço:</strong> ${order.customer.address}, ${order.customer.number}</p>
+                        ${order.customer.complement ? `<p style="font-size: 14px; margin: 0;"><strong>Complemento:</strong> ${order.customer.complement}</p>` : ''}
+                        ${order.customer.reference ? `<p style="font-size: 14px; margin: 0;"><strong>Ponto de Ref.:</strong> ${order.customer.reference}</p>` : ''}
+                    </div>
+        
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">Itens:</h3>
+                        ${orderItemsHtml}
+                    </div>
+        
+                    <div style="border-top: 2px solid #333; padding-top: 10px; margin-top: 20px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold;">
+                            <span>TOTAL:</span>
+                            <span>R$ ${order.total.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        <p style="font-size: 14px; margin-top: 10px;"><strong>Forma de Pagamento:</strong> ${order.paymentMethod}</p>
+                    </div>
+        
+                    <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #888;">
+                        <p>Impresso em: ${new Date().toLocaleString()}</p>
+                    </div>
+                </div>
+            `;
+        
+            printDocument.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Impressão de Pedido #${order.id.slice(-6)}</title>
+                    <style>
+                        @media print {
+                            @page { size: auto; margin: 10mm; }
+                            body { margin: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${printContent}
+                </body>
+                </html>
+            `);
+            printDocument.close();
+            printWindow.focus();
+            printWindow.print();
+        }
+
+        // ======================= LISTENERS DE EVENTOS =======================
+        window.addEventListener('DOMContentLoaded', () => {
+            loadAllData();
+            // Inicia a verificação automática de pedidos
+            setInterval(autoFinalizeOldOrders, AUTO_FINALIZE_INTERVAL_MS);
+        });
+        
+        // Listener principal para detecção de novos pedidos e ações
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'myOrders') {
+                const newOrders = JSON.parse(e.newValue) || [];
+                const oldOrders = myOrders;
+
+                let latestOrder = null;
+
+                // Encontra o novo pedido adicionado
+                if (newOrders.length > oldOrders.length) {
+                    const oldOrderIds = new Set(oldOrders.map(order => order.id));
+                    latestOrder = newOrders.find(order => !oldOrderIds.has(order.id));
+                }
+
+                myOrders = newOrders;
+                renderMyOrdersPage();
+                
+                // Se um novo pedido foi encontrado, executa as ações
+                if (latestOrder) {
+                    showNewOrderNotification(); // Notificação sonora e visual
+                    highlightNewOrder(latestOrder.id); // Destaque visual do pedido
+                    
+                    // Impressão automática com atraso de 2.5 segundos
+                    setTimeout(() => {
+                        printOrder(latestOrder.id);
+                    }, 2500);
+                }
+            }
+        });
+
+        myOrdersList.addEventListener('click', (e) => {
+            const orderDiv = e.target.closest('[data-order-id]');
+            if (!orderDiv) return;
+
+            // Remove o destaque ao clicar no card do pedido
+            if (orderDiv.classList.contains('new-order-highlight')) {
+                orderDiv.classList.remove('new-order-highlight');
+            }
+
+            const orderId = orderDiv.dataset.orderId;
+
+            if (e.target.closest('.print-order-btn')) {
+                printOrder(orderId);
+                return;
+            }
+            
+            if (e.target.closest('.remove-order-btn')) {
+                showConfirmationModal('Excluir Pedido', `Tem certeza que deseja excluir o pedido #${orderId.slice(-6)}? Esta ação não pode ser desfeita.`, () => removeOrder(orderId));
+                return;
+            }
+
+            if (e.target.closest('.dispatch-order-btn')) {
+                dispatchOrder(orderId);
+                return;
+            }
+
+            if (e.target.closest('.finish-order-btn')) {
+                finishOrder(orderId);
+                return;
+            }
+
+            const details = orderDiv.querySelector('.order-details');
+            if (details) {
+                details.classList.toggle('hidden');
+            }
+        });
+        
+        cancelConfirmationBtn.addEventListener('click', () => toggleModal(confirmationModal, false));
+        confirmActionBtn.addEventListener('click', () => {
+            if (confirmationCallback) {
+                confirmationCallback();
+            }
+            confirmationCallback = null;
+            toggleModal(confirmationModal, false);
+        });
+
+    </script>
+</body>
+</html>
