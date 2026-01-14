@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastPlayer Pro v27.0</title>
+    <style>
+        :root { --primary: #2563eb; --success: #10b981; --dark: #0f172a; --gray: #f8fafc; --accent: #6366f1; --danger: #ef4444; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: #f1f5f9; color: #1e293b; overflow-x: hidden; }
+        .screen { display: none; min-height: 100vh; width: 100vw; }
+        .active { display: flex; flex-direction: column; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0 15px 0; border: 1px solid #cbd5e1; border-radius: 10px; box-sizing: border-box; }
+        .btn { padding: 14px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; width: 100%; margin-bottom: 10px; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-accent { background: var(--accent); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        
+        #progressContainer { display: none; margin-top: 15px; background: #e2e8f0; border-radius: 10px; height: 12px; overflow: hidden; }
+        #progressBar { background: var(--success); width: 0%; height: 100%; transition: width 0.3s; }
+        
+        .media-item { display: grid; grid-template-columns: 45px 1fr auto; align-items: center; padding: 12px; background: white; margin-bottom: 8px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        #player { background: #000; position: fixed; top: 0; left: 0; z-index: 9999; height: 100vh; width: 100vw; }
+        #displayArea { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        #displayArea img, #displayArea video, #displayArea iframe { width: 100%; height: 100%; object-fit: contain; border: none; background: #000; }
+    </style>
+</head>
+<body>
+
+    <div id="login" class="screen">
+        <div style="display:flex; justify-content:center; align-items:center; height:100vh; background:var(--dark);">
+            <div style="background:white; padding:40px; border-radius:24px; width:340px;">
+                <h2 style="text-align:center; margin-top:0;">FastPlayer 🔐</h2>
+                <input type="email" id="email" placeholder="Seu E-mail">
+                <input type="password" id="pass" placeholder="Sua Senha">
+                <button class="btn btn-primary" onclick="window.handleLogin()">Entrar no Painel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="menu" class="screen">
+        <div class="container">
+            <div class="card" style="background: var(--dark); color: white; text-align: center;">
+                <h1 style="margin-bottom:5px;">Painel de Controle</h1>
+                <p id="userMail" style="font-size:12px; opacity:0.7; margin-bottom:20px;"></p>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <button class="btn btn-primary" onclick="window.show('config')">⚙️ Playlist</button>
+                    <button class="btn btn-success" onclick="window.startPlayer()">▶️ Iniciar TV</button>
+                </div>
+                <button onclick="window.handleLogout()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; margin-top:15px;">✕ Sair da Conta</button>
+            </div>
+
+            <div class="card" style="border: 2px dashed var(--accent);">
+                <h3>🔗 Conversor Dropbox</h3>
+                <input type="text" id="dropIn" placeholder="Cole o link do Dropbox (dl=0) aqui...">
+                <button class="btn btn-accent" onclick="window.convertDrop()">Converter Link</button>
+                <div id="dropOutArea" style="display:none; margin-top:10px; background: #f0f4ff; padding: 15px; border-radius: 10px; border: 1px solid #dbeafe;">
+                    <div id="dropOutLink" style="font-size:11px; color:var(--accent); word-break:break-all; font-weight:bold; margin-bottom:10px;"></div>
+                    <button class="btn" style="background:#334155; color:white; font-size:12px; padding:8px;" onclick="window.copyConvertedLink()">📋 Copiar Link Direto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="config" class="screen">
+        <div class="container">
+            <button onclick="window.show('menu')" class="btn" style="background:#ddd; width:auto; margin-bottom:15px;">⬅ Voltar ao Menu</button>
+            <div class="card">
+                <h2>Adicionar Nova Mídia</h2>
+                <div style="display:grid; grid-template-columns: 3fr 1fr; gap:10px;">
+                    <input type="text" id="propName" placeholder="Nome da Mídia">
+                    <input type="number" id="propOrder" value="1">
+                </div>
+                
+                <select id="inputType" onchange="window.updateForm()">
+                    <option value="video_url">URL de Vídeo (Dropbox/Link)</option>
+                    <option value="img_url">URL de Imagem (Dropbox/Link)</option>
+                    <option value="widget">Widget / RSS / Site</option>
+                    <option value="upload_video">Upload Local VÍDEO (Firebase)</option>
+                    <option value="upload_img">Upload Local IMAGEM (Firebase)</option>
+                </select>
+
+                <div id="divLink"><input type="url" id="propUrl" placeholder="Cole o link aqui..."></div>
+                <div id="divFile" style="display:none;"><input type="file" id="fileInput"></div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div><small>Programar Início:</small><input type="datetime-local" id="start"></div>
+                    <div><small>Programar Fim:</small><input type="datetime-local" id="end"></div>
+                </div>
+
+                <button class="btn btn-success" id="btnSave" onclick="window.handleSave()">Salvar na Nuvem</button>
+                <div id="progressContainer"><div id="progressBar"></div></div>
+                <p id="statusTxt" style="text-align:center; font-size:12px; display:none;"></p>
+            </div>
+            <div id="mediaList"></div>
+        </div>
+    </div>
+
+    <div id="player" class="screen"><div id="displayArea"></div></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBRi-46l3LtTDY1lXLlhOImDiGVwfNKk5U",
+            authDomain: "fastplayer-f116c.firebaseapp.com",
+            projectId: "fastplayer-f116c",
+            storageBucket: "fastplayer-f116c.firebasestorage.app",
+            messagingSenderId: "1069215413731",
+            appId: "1:1069215413731:web:a6f054930a15fd73a6dcd6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let playlist = [];
+        let convertedLink = "";
+
+        // MONITOR DE LOGIN
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                document.getElementById('userMail').innerText = "Logado como: " + user.email;
+                window.show('menu');
+                monitorar(user.uid);
+            } else {
+                window.show('login');
+            }
+        });
+
+        window.handleLogin = () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Erro ao entrar: " + e.message));
+        };
+
+        window.handleLogout = () => {
+            if(confirm("Deseja realmente sair da conta?")) signOut(auth);
+        };
+
+        window.convertDrop = () => {
+            let link = document.getElementById('dropIn').value;
+            if(!link.includes('dropbox.com')) return alert("Link inválido.");
+            convertedLink = link.replace('dl=0', 'raw=1');
+            document.getElementById('dropOutArea').style.display = "block";
+            document.getElementById('dropOutLink').innerText = convertedLink;
+        };
+
+        window.copyConvertedLink = () => {
+            navigator.clipboard.writeText(convertedLink).then(() => alert("Copiado!"));
+        };
+
+        window.updateForm = () => {
+            const val = document.getElementById('inputType').value;
+            document.getElementById('divFile').style.display = val.startsWith('upload') ? 'block' : 'none';
+            document.getElementById('divLink').style.display = val.startsWith('upload') ? 'none' : 'block';
+            document.getElementById('fileInput').accept = val.includes('video') ? "video/*" : "image/*";
+        };
+
+        window.handleSave = async () => {
+            const user = auth.currentUser;
+            const type = document.getElementById('inputType').value;
+            const name = document.getElementById('propName').value;
+            const order = parseInt(document.getElementById('propOrder').value) || 0;
+            const start = document.getElementById('start').value;
+            const end = document.getElementById('end').value;
+
+            if(!name) return alert("Dê um nome.");
+            
+            const btn = document.getElementById('btnSave');
+            const pBar = document.getElementById('progressBar');
+            const pCont = document.getElementById('progressContainer');
+            const status = document.getElementById('statusTxt');
+
+            if(type.startsWith('upload')) {
+                const file = document.getElementById('fileInput').files[0];
+                if(!file) return alert("Selecione o arquivo.");
+                btn.disabled = true; pCont.style.display = "block"; status.style.display = "block"; status.innerText = "Processando...";
+                const reader = new FileReader();
+                reader.onprogress = (e) => { if (e.lengthComputable) pBar.style.width = (e.loaded / e.total * 100) + "%"; };
+                reader.onload = async () => { await salvar(name, reader.result, type, order, start, end, user.uid); };
+                reader.readAsDataURL(file);
+            } else {
+                const content = document.getElementById('propUrl').value;
+                if(!content) return alert("Insira a URL.");
+                await salvar(name, content, type, order, start, end, user.uid);
+            }
+        };
+
+        async function salvar(name, content, type, order, start, end, uid) {
+            try {
+                await addDoc(collection(db, "playlist"), { name, content, type, order, start, end, userId: uid, timestamp: Date.now() });
+                alert("Salvo!"); location.reload();
+            } catch(e) { alert("Erro ao salvar."); }
+        }
+
+        function monitorar(uid) {
+            const q = query(collection(db, "playlist"), where("userId", "==", uid), orderBy("order", "asc"));
+            onSnapshot(q, (snap) => {
+                playlist = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                const listEl = document.getElementById('mediaList');
+                listEl.innerHTML = "";
+                playlist.forEach(item => {
+                    listEl.innerHTML += `<div class="media-item"><b>#${item.order}</b> <span>${item.name}</span> <button onclick="window.deleteItem('${item.id}')" style="color:red; background:none; border:none; cursor:pointer;">Remover</button></div>`;
+                });
+            });
+        }
+
+        window.deleteItem = (id) => confirm("Excluir?") && deleteDoc(doc(db, "playlist", id));
+
+        let playIdx = 0, timer;
+        window.startPlayer = () => { if(!playlist.length) return alert("Playlist vazia."); window.show('player'); loop(); };
+
+        function loop() {
+            if(playIdx >= playlist.length) playIdx = 0;
+            const item = playlist[playIdx];
+            const agora = new Date().getTime();
+
+            if((item.start && agora < new Date(item.start).getTime()) || (item.end && agora > new Date(item.end).getTime())) {
+                playIdx++; return loop();
+            }
+
+            const area = document.getElementById('displayArea');
+            area.innerHTML = "";
+            const proxima = () => { clearTimeout(timer); playIdx++; loop(); };
+
+            if(item.type.includes('video')) {
+                const vid = document.createElement('video'); vid.src = item.content; vid.autoplay = true; vid.onended = proxima; vid.onerror = proxima;
+                area.appendChild(vid);
+            } else if(item.type === 'widget') {
+                const frame = document.createElement('iframe'); frame.src = item.content; area.appendChild(frame);
+                timer = setTimeout(proxima, 40000);
+            } else {
+                const img = new Image(); img.src = item.content; area.appendChild(img);
+                timer = setTimeout(proxima, 10000);
+            }
+        }
+
+        window.show = (id) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        };
+    </script>
+</body>
+</html>
