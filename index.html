@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FastPlayer Pro v27.0</title>
+    <title>FastPlayer Pro v28.0</title>
     <style>
         :root { --primary: #2563eb; --success: #10b981; --dark: #0f172a; --gray: #f8fafc; --accent: #6366f1; --danger: #ef4444; }
         body { font-family: 'Inter', sans-serif; margin: 0; background: #f1f5f9; color: #1e293b; overflow-x: hidden; }
@@ -35,7 +35,7 @@
                 <h2 style="text-align:center; margin-top:0;">FastPlayer 🔐</h2>
                 <input type="email" id="email" placeholder="Seu E-mail">
                 <input type="password" id="pass" placeholder="Sua Senha">
-                <button class="btn btn-primary" onclick="window.handleLogin()">Entrar no Painel</button>
+                <button class="btn btn-primary" onclick="window.handleLogin()">Entrar</button>
             </div>
         </div>
     </div>
@@ -43,22 +43,22 @@
     <div id="menu" class="screen">
         <div class="container">
             <div class="card" style="background: var(--dark); color: white; text-align: center;">
-                <h1 style="margin-bottom:5px;">Painel de Controle</h1>
+                <h1 style="margin-bottom:5px;">Painel Cloud</h1>
                 <p id="userMail" style="font-size:12px; opacity:0.7; margin-bottom:20px;"></p>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                     <button class="btn btn-primary" onclick="window.show('config')">⚙️ Playlist</button>
                     <button class="btn btn-success" onclick="window.startPlayer()">▶️ Iniciar TV</button>
                 </div>
-                <button onclick="window.handleLogout()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; margin-top:15px;">✕ Sair da Conta</button>
+                <button onclick="window.handleLogout()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; margin-top:10px;">Sair da Conta</button>
             </div>
 
             <div class="card" style="border: 2px dashed var(--accent);">
                 <h3>🔗 Conversor Dropbox</h3>
-                <input type="text" id="dropIn" placeholder="Cole o link do Dropbox (dl=0) aqui...">
-                <button class="btn btn-accent" onclick="window.convertDrop()">Converter Link</button>
-                <div id="dropOutArea" style="display:none; margin-top:10px; background: #f0f4ff; padding: 15px; border-radius: 10px; border: 1px solid #dbeafe;">
-                    <div id="dropOutLink" style="font-size:11px; color:var(--accent); word-break:break-all; font-weight:bold; margin-bottom:10px;"></div>
-                    <button class="btn" style="background:#334155; color:white; font-size:12px; padding:8px;" onclick="window.copyConvertedLink()">📋 Copiar Link Direto</button>
+                <input type="text" id="dropIn" placeholder="Cole o link dl=0 aqui...">
+                <button class="btn btn-accent" onclick="window.convertDrop()">Converter</button>
+                <div id="dropOutArea" style="display:none; margin-top:10px; background: #f0f4ff; padding: 15px; border-radius: 10px;">
+                    <div id="dropOutLink" style="font-size:11px; word-break:break-all; font-weight:bold; margin-bottom:10px; color:var(--accent);"></div>
+                    <button class="btn" style="background:#334155; color:white; font-size:12px; padding:8px;" onclick="window.copyConvertedLink()">📋 Copiar</button>
                 </div>
             </div>
         </div>
@@ -66,31 +66,33 @@
 
     <div id="config" class="screen">
         <div class="container">
-            <button onclick="window.show('menu')" class="btn" style="background:#ddd; width:auto; margin-bottom:15px;">⬅ Voltar ao Menu</button>
+            <button onclick="window.show('menu')" class="btn" style="background:#ddd; width:auto; margin-bottom:15px;">⬅ Voltar</button>
             <div class="card">
-                <h2>Adicionar Nova Mídia</h2>
-                <div style="display:grid; grid-template-columns: 3fr 1fr; gap:10px;">
-                    <input type="text" id="propName" placeholder="Nome da Mídia">
-                    <input type="number" id="propOrder" value="1">
+                <h2>Nova Mídia</h2>
+                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:10px;">
+                    <input type="text" id="propName" placeholder="Nome">
+                    <input type="number" id="propOrder" placeholder="Ordem" value="1">
+                    <input type="number" id="propDuration" placeholder="Tempo (seg)">
                 </div>
+                <small style="color:gray; display:block; margin-top:-10px; margin-bottom:10px;">* Deixe o tempo vazio para usar o padrão.</small>
                 
                 <select id="inputType" onchange="window.updateForm()">
-                    <option value="video_url">URL de Vídeo (Dropbox/Link)</option>
-                    <option value="img_url">URL de Imagem (Dropbox/Link)</option>
-                    <option value="widget">Widget / RSS / Site</option>
-                    <option value="upload_video">Upload Local VÍDEO (Firebase)</option>
-                    <option value="upload_img">Upload Local IMAGEM (Firebase)</option>
+                    <option value="video_url">URL de Vídeo (Dropbox)</option>
+                    <option value="img_url">URL de Imagem (Dropbox)</option>
+                    <option value="widget">Widget / Site</option>
+                    <option value="upload_video">Upload Local VÍDEO</option>
+                    <option value="upload_img">Upload Local IMAGEM</option>
                 </select>
 
-                <div id="divLink"><input type="url" id="propUrl" placeholder="Cole o link aqui..."></div>
+                <div id="divLink"><input type="url" id="propUrl" placeholder="https://..."></div>
                 <div id="divFile" style="display:none;"><input type="file" id="fileInput"></div>
 
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <div><small>Programar Início:</small><input type="datetime-local" id="start"></div>
-                    <div><small>Programar Fim:</small><input type="datetime-local" id="end"></div>
+                    <input type="datetime-local" id="start">
+                    <input type="datetime-local" id="end">
                 </div>
 
-                <button class="btn btn-success" id="btnSave" onclick="window.handleSave()">Salvar na Nuvem</button>
+                <button class="btn btn-success" id="btnSave" onclick="window.handleSave()">Salvar Mídia</button>
                 <div id="progressContainer"><div id="progressBar"></div></div>
                 <p id="statusTxt" style="text-align:center; font-size:12px; display:none;"></p>
             </div>
@@ -120,44 +122,33 @@
         let playlist = [];
         let convertedLink = "";
 
-        // MONITOR DE LOGIN
         onAuthStateChanged(auth, user => {
-            if (user) {
-                document.getElementById('userMail').innerText = "Logado como: " + user.email;
-                window.show('menu');
-                monitorar(user.uid);
-            } else {
-                window.show('login');
-            }
+            if (user) { document.getElementById('userMail').innerText = user.email; window.show('menu'); monitorar(user.uid); } 
+            else { window.show('login'); }
         });
 
         window.handleLogin = () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
-            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Erro ao entrar: " + e.message));
+            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Erro: " + e.message));
         };
 
-        window.handleLogout = () => {
-            if(confirm("Deseja realmente sair da conta?")) signOut(auth);
-        };
+        window.handleLogout = () => confirm("Sair?") && signOut(auth);
 
         window.convertDrop = () => {
             let link = document.getElementById('dropIn').value;
-            if(!link.includes('dropbox.com')) return alert("Link inválido.");
+            if(!link.includes('dropbox.com')) return alert("Link Inválido");
             convertedLink = link.replace('dl=0', 'raw=1');
             document.getElementById('dropOutArea').style.display = "block";
             document.getElementById('dropOutLink').innerText = convertedLink;
         };
 
-        window.copyConvertedLink = () => {
-            navigator.clipboard.writeText(convertedLink).then(() => alert("Copiado!"));
-        };
+        window.copyConvertedLink = () => navigator.clipboard.writeText(convertedLink).then(() => alert("Copiado!"));
 
         window.updateForm = () => {
             const val = document.getElementById('inputType').value;
             document.getElementById('divFile').style.display = val.startsWith('upload') ? 'block' : 'none';
             document.getElementById('divLink').style.display = val.startsWith('upload') ? 'none' : 'block';
-            document.getElementById('fileInput').accept = val.includes('video') ? "video/*" : "image/*";
         };
 
         window.handleSave = async () => {
@@ -165,10 +156,11 @@
             const type = document.getElementById('inputType').value;
             const name = document.getElementById('propName').value;
             const order = parseInt(document.getElementById('propOrder').value) || 0;
+            const duration = parseInt(document.getElementById('propDuration').value) || null; // Salva nulo se vazio
             const start = document.getElementById('start').value;
             const end = document.getElementById('end').value;
 
-            if(!name) return alert("Dê um nome.");
+            if(!name) return alert("Insira o nome");
             
             const btn = document.getElementById('btnSave');
             const pBar = document.getElementById('progressBar');
@@ -177,24 +169,23 @@
 
             if(type.startsWith('upload')) {
                 const file = document.getElementById('fileInput').files[0];
-                if(!file) return alert("Selecione o arquivo.");
-                btn.disabled = true; pCont.style.display = "block"; status.style.display = "block"; status.innerText = "Processando...";
+                if(!file) return alert("Selecione o arquivo");
+                btn.disabled = true; pCont.style.display = "block"; status.style.display = "block";
                 const reader = new FileReader();
-                reader.onprogress = (e) => { if (e.lengthComputable) pBar.style.width = (e.loaded / e.total * 100) + "%"; };
-                reader.onload = async () => { await salvar(name, reader.result, type, order, start, end, user.uid); };
+                reader.onprogress = (e) => { if (e.lengthComputable) pBar.style.width = (e.loaded/e.total*100) + "%"; };
+                reader.onload = async () => { await salvar(name, reader.result, type, order, start, end, user.uid, duration); };
                 reader.readAsDataURL(file);
             } else {
                 const content = document.getElementById('propUrl').value;
-                if(!content) return alert("Insira a URL.");
-                await salvar(name, content, type, order, start, end, user.uid);
+                await salvar(name, content, type, order, start, end, user.uid, duration);
             }
         };
 
-        async function salvar(name, content, type, order, start, end, uid) {
+        async function salvar(name, content, type, order, start, end, uid, duration) {
             try {
-                await addDoc(collection(db, "playlist"), { name, content, type, order, start, end, userId: uid, timestamp: Date.now() });
+                await addDoc(collection(db, "playlist"), { name, content, type, order, start, end, userId: uid, duration, timestamp: Date.now() });
                 alert("Salvo!"); location.reload();
-            } catch(e) { alert("Erro ao salvar."); }
+            } catch(e) { alert("Erro ao salvar"); }
         }
 
         function monitorar(uid) {
@@ -204,7 +195,7 @@
                 const listEl = document.getElementById('mediaList');
                 listEl.innerHTML = "";
                 playlist.forEach(item => {
-                    listEl.innerHTML += `<div class="media-item"><b>#${item.order}</b> <span>${item.name}</span> <button onclick="window.deleteItem('${item.id}')" style="color:red; background:none; border:none; cursor:pointer;">Remover</button></div>`;
+                    listEl.innerHTML += `<div class="media-item"><b>#${item.order}</b> <span>${item.name} (${item.duration ? item.duration+'s' : 'Auto'})</span> <button onclick="window.deleteItem('${item.id}')" style="color:red; background:none; border:none; cursor:pointer;">Remover</button></div>`;
                 });
             });
         }
@@ -212,7 +203,7 @@
         window.deleteItem = (id) => confirm("Excluir?") && deleteDoc(doc(db, "playlist", id));
 
         let playIdx = 0, timer;
-        window.startPlayer = () => { if(!playlist.length) return alert("Playlist vazia."); window.show('player'); loop(); };
+        window.startPlayer = () => { if(!playlist.length) return alert("Vazio"); window.show('player'); loop(); };
 
         function loop() {
             if(playIdx >= playlist.length) playIdx = 0;
@@ -227,15 +218,26 @@
             area.innerHTML = "";
             const proxima = () => { clearTimeout(timer); playIdx++; loop(); };
 
+            // DETERMINA O TEMPO
+            let tempoFinal;
+            if (item.duration) {
+                tempoFinal = item.duration * 1000; // Segundos para Milissegundos
+            } else {
+                // PADRÕES
+                tempoFinal = (item.type === 'widget') ? 40000 : 10000;
+            }
+
             if(item.type.includes('video')) {
                 const vid = document.createElement('video'); vid.src = item.content; vid.autoplay = true; vid.onended = proxima; vid.onerror = proxima;
                 area.appendChild(vid);
+                // Se houver tempo manual no vídeo, ele corta o vídeo antes de acabar
+                if(item.duration) timer = setTimeout(proxima, tempoFinal);
             } else if(item.type === 'widget') {
                 const frame = document.createElement('iframe'); frame.src = item.content; area.appendChild(frame);
-                timer = setTimeout(proxima, 40000);
+                timer = setTimeout(proxima, tempoFinal);
             } else {
                 const img = new Image(); img.src = item.content; area.appendChild(img);
-                timer = setTimeout(proxima, 10000);
+                timer = setTimeout(proxima, tempoFinal);
             }
         }
 
